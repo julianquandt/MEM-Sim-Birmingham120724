@@ -263,12 +263,15 @@ Now lets simulate the dependent variable based on this.
 ```{r}
 set.seed(123)
 
-error <- rnorm(nrow(song_data), 0, 10) # this is the error term that we add to the data
+sd_error <- 10 # this is the standard deviation of the error term aka residual variance
+error <- rnorm(nrow(song_data), 0, sd_error) 
 
 song_data1 <- song_data
 
 for(i in 1:nrow(song_data1)){
-  song_data1$Y[i] <- b0 + b1 * ifelse(song_data1$genre[i] == "rock", 1, 0) + U0[song_data1$participant[i]] + error[i]
+  u0 <- U0[song_data1$participant[i]]
+  x <- ifelse(song_data1$genre[i] == "rock", 1, 0)
+  song_data1$Y[i] <- b0 + u0 + b1 * x + error[i]
 }
 View(song_data1)
 ```
@@ -306,10 +309,13 @@ Now we can simulate the data again.
 
 ```{r}
 set.seed(123)
-error <- rnorm(nrow(song_data), 0, 10) # this is the error term that we add to the data
 song_data2 <- song_data
 for(i in 1:nrow(song_data2)){
-  song_data2$Y[i] <- b0 + b1 * ifelse(song_data2$genre[i] == "rock", 1, 0) + U0[song_data2$participant[i]] + error[i]
+
+  u0 <- U0[song_data2$participant[i]]
+  x <- ifelse(song_data2$genre[i] == "rock", 1, 0)
+
+  song_data2$Y[i] <- b0 + u0 + b1 * x + error[i]
 }
 ```
 
@@ -350,3 +356,393 @@ summary(song_model_4)
 We see that in the latter case, when we just run a model without accounting for the random intercept, the p-value for the genre effect is larger, and the error variance is larger.
 This is because the model will try to account for the participant-specific differences in overall liking by attributing this to the error term.
 This in turn decreases the power of the model to detect the genre effect, and decreases the amount of explained variance.
+
+## Simulating Random Slopes
+
+If we want to add a participant-specific adjustment to the effect of genre on their overall liking, we can do so by adding a random slope.
+
+```{r}
+set.seed(123)
+
+sd_u0 <- 7 # this is the standard deviation of the random intercepts
+U0 <- rnorm(n_participants, 0, sd_u0) # this is the random intercept for each participant
+
+sd_u1 <- 3.5 # this is the standard deviation of the random slopes
+U1 <- rnorm(n_participants, 0, sd_u1) # this is the set of random slopes for each participant
+hist(5+U1, main = "Participant-specific genre effect", xlab = "Liking for Rock over Pop")
+```
+
+We can see in the histogram, that for some people the difference is now very strongly positive, indicating that they LOVE rock way more than pop, while for others the difference is very strongly negative, indicating that they LOVE pop way more than rock.
+
+Now we can simulate the data again.
+
+```{r}
+
+song_data3 <- song_data
+for(i in 1:nrow(song_data3)){
+  u0 <- U0[song_data3$participant[i]]
+  u1 <- U1[song_data3$participant[i]]
+  x <- ifelse(song_data3$genre[i] == "rock", 1, 0)
+
+  song_data3$Y[i] <- b0 + u0 + (b1 + u1) * x + error[i]
+}
+
+```
+
+and fit the model
+
+```{r}
+song_model_5 <- lmer(Y ~ genre + (1+genre|participant), data = song_data3)
+summary(song_model_5)
+```
+
+## Adding crossed random effects for songs
+
+If we want to add a random effect for songs, we can do so by adding a random effect for songs that is independent of the random effect for participants.
+
+```{r}
+set.seed(123)
+
+sd_w0 <- 15
+W0 <- rnorm(n_songs*2, 0, sd_w0) #n_songs*2 as n_songs is the number of songs per genre
+
+
+hist(75+W0, main = "Song-specific music liking", xlab = "Liking score (0-100)")
+```
+
+The  histogram shows that songs differ hugely in how much they are liked overall in this new model.
+
+Now we can simulate the data again.
+
+```{r}
+song_data4 <- song_data
+
+for(i in 1:nrow(song_data4)){
+
+  u0 <- U0[song_data4$participant[i]]
+  u1 <- U1[song_data4$participant[i]]
+  w0 <- W0[which(unique(song_data4$song) == song_data4$song[i])]
+  x <- ifelse(song_data4$genre[i] == "rock", 1, 0)
+
+  song_data4$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error[i]
+}
+```
+
+and fit the model
+
+```{r}
+song_model_6 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_data4)
+summary(song_model_6)
+```
+
+We can see, that the model does a decent job at recovering the estimates.
+However, now the fixed effect of genre (supposed to be 5) is closer to 8, which seems a little odd.
+The reason for this is that with this small sample size with only 10 people, making the estimation of the parameters more difficult.
+
+Let's see what happens if we increase sample size to 100 people listening to 80 songs each:
+
+```{r}
+n_participants_large <- 100
+n_genres <- 2
+n_songs <- 80
+
+song_data_large <- generate_design(n_participants = n_participants_large, n_genres = n_genres, n_songs = n_songs)
+```
+
+
+Lets again create random effects for participants and songs in this larger sample
+
+```{r}
+song_data5 <- song_data_large
+
+set.seed(456)
+U0_large <- rnorm(n_participants_large, 0, sd_u0)
+U1_large <- rnorm(n_participants_large, 0, sd_u1)
+W0_large <- rnorm(length(unique(song_data5$song)), 0, sd_w0) 
+error_large <- rnorm(nrow(song_data5), 0, sd_error)
+```
+
+now lets simulate the data again
+
+```{r}
+
+
+
+for(i in 1:nrow(song_data5)){
+
+  u0 <- U0_large[song_data5$participant[i]]
+  u1 <- U1_large[song_data5$participant[i]]
+  w0 <- W0[which(unique(song_data5$song) == song_data5$song[i])]
+  x <- ifelse(song_data5$genre[i] == "rock", 1, 0)
+
+  song_data5$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error_large[i]
+}
+
+```
+
+and fit the model
+
+```{r}
+song_model_7 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_data5)
+summary(song_model_7)
+```
+
+The estimates are closer to what they are supposed to be now.
+Note that, however, even in this large sample, if we repeated the simulation with another seed, the estimates will still widely vary.
+Lets try to change the seed, and resample random effect values
+
+```{r}
+set.seed(4356) # use other simulation seed
+U0_large <- rnorm(n_participants_large, 0, sd_u0)
+U1_large <- rnorm(n_participants_large, 0, sd_u1)
+W0_large <- rnorm(length(unique(song_data5$song)), 0, sd_w0) 
+error_large <- rnorm(nrow(song_data5), 0, sd_error)
+```
+
+and resimulate the DV
+
+```{r}
+
+for(i in 1:nrow(song_data5)){
+
+  u0 <- U0_large[song_data5$participant[i]]
+  u1 <- U1_large[song_data5$participant[i]]
+  w0 <- W0[which(unique(song_data5$song) == song_data5$song[i])]
+  x <- ifelse(song_data5$genre[i] == "rock", 1, 0)
+
+  song_data5$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error_large[i]
+}
+
+```
+
+and fit the model again
+
+```{r}
+song_model_8 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_data5)
+summary(song_model_8)
+```
+
+Now the estimate is again closer to 6. 
+This is not a bug but a feature of mixed-effects model simulations.
+We assume that we only tested our hypothesis on a _random_ subset of people from the population and other people might behave differently. 
+Similarly, we did not use _all_ pop and rock songs out there, so the results depend on the idiosyncratic sample of songs that we used.
+By simulating random effects, we can see what influence this has on the results.
+In a power simulation, these factors will thus rightfully influence the power we get, as individual simulations acknowledge the uncertainty that we have about the sample of songs and participants that we might end up with.
+
+# Part III - 👍: Adding random correlations
+
+Random effects terms can also be correlated:
+For instance, has a high overall liking of music across both genres (𝛽_0+𝑢_0 close to 100), this would indicate that they cannot dislike either music genre much or else they would not be able to have an average liking of close to 100 across genres. If they liked one music type (e.g. pop) with only 60 points, to have an average liking of e.g. 95, they would have to like rock music at 130, because (60+130)/2 = 95. However, 130 is not a possible value on our scale and therefore this can’t be the case.
+As a consequence, any person with high average liking across genres, is unlikely to have large values of 𝑢_1 . In other terms, across people the values of 𝑢_0 and 𝑢_1 will be negatively correlated.
+
+To simulate this, we need to make sure that across people, the values of 𝑢_0 and 𝑢_1 are negatively correlated.
+
+First let's have a look at where the correlations show up in the model output:
+
+```{r}
+summary(song_model_8)
+```
+
+We can see that next to the estimate for the random effect of participant:genrerock, there is a correlation estimate of -0.03. This is the correlation between the random intercept and the random slope for genre rock.
+That it is so small makes sense, as we did not simulate any correlation between the random effects.
+
+To simulate this, we can use the `MASS` package to simulate correlated random effects.
+For this, we will calculate the covariance matrix of the random effects and then use the `mvrnorm` function to simulate the random effects.
+The covariance matrix is basically the random effect sizes that we put in before, expressed in terms of variances and covariance instead of standard deviations. 
+For instance before we set sd_u0 (the random intercept term for participants) to 7 and sd_01 (the random slope term for genre effects over participants) to 3.5.
+Assuming a correlation of -0.2 between the random effects, the covariance can be calculated as:
+7*3.5*-0.2 = -4.9
+
+To create a matrix `sigma_u01` containing this information we can run:
+
+
+```{r}
+library(MASS)
+corr_u01 <- -0.2 # this will be the correlation between the random effects
+sigma_u01 <- matrix(c(sd_u0^2, sd_u0*sd_u1*corr_u01, sd_u0*sd_u1*corr_u01, sd_u1^2), ncol = 2)
+print(sigma_u01)
+```
+
+We see that now this contains a 2x2 matrix with the variance of sd_u0 (7^2 = 49) and next to it the covariance 7*3.5*-0.2 = -4.9.
+In the second row, we again have the covariance, followed by the variance of sd_u1 (3.5^2 = 12.25).
+Thus the matrix looks like this:
+
+| sd_u0^2 | sd_u0*sd_u1*corr_u01 |
+| sd_u0*sd_u1*corr_u01 | sd_u1^2 |
+
+Now we can simulate the random effects using this covariance matrix.
+
+```{r}
+set.seed(123)
+U01 <- mvrnorm(n_participants_large,c(0,0),sigma_u01)
+print(U01)
+
+cor(U01)
+```
+
+You can read this as follows:
+
+create a multivariate normal distribution (i.e. a data-set containing values of two correlated normal distributions), both of which have mean 0 (as we are simulating random effects as sd again) by using the covariance matrix sigma_u01.
+
+We see that for each of our 100 participants, we have a value for the random intercept and a value for the random slope that are correlated with -0.2275207, which is close to what we wanted.
+
+Now we can simulate the data again.
+
+```{r}
+song_data6 <- song_data_large
+
+U0_correlated <- U01[,1] # as U0 we take the first column of the U01 matrix, as this contains the random intercept terms
+U1_correlated <- U01[,2] # as U1 we take the second column of the U01 matrix, as this contains the random slope terms
+
+
+for(i in 1:nrow(song_data6)){
+
+  u0 <- U0_correlated[song_data6$participant[i]]
+  u1 <- U1_correlated[song_data6$participant[i]]
+  w0 <- W0[which(unique(song_data6$song) == song_data6$song[i])]
+  x <- ifelse(song_data6$genre[i] == "rock", 1, 0)
+
+  song_data6$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error_large[i]
+}
+```
+
+```{r}
+song_model_9 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_data6)
+summary(song_model_9)
+```
+
+We can see, that now our estimated correlation is close to the correlation that we simulated.
+
+# Part III ❤️ : How to come up with parameter values
+
+In the above, we basically came up with parameter values out of thin air and just added all of the random terms on top of each other. 
+This is usually not what we would want to do.
+In fact, as we already saw earlier, compared to a fixed-effects-only linear model (lm) the advantage of a mixed-model (lmer) is that can partition the residual variance (i.e. unexplained variance) into different sources of variance, which will of course _shrink_ the overall variance.
+In the steps above, we never changed the value of the error term (it was always kept at 10). 
+However, usually we would expect the total error to _decrease_ as we add random effects, as some of the noise that appears to be random at first, will turn out to be attributable to participants (as in the random intercept term) or idiosyncratic liking differences in genres across participants (the random slope term) or idiosyncratic influences of songs. 
+
+Thus, instead of coming up with numbers for all of them, we can think about how much of the overall noise (the residual variance) will probably be attributable to participants, genres, and songs.
+
+For instance, in our music example, we might think that just by factors we do not know, likings will vary strongly
+
+Instead, by quickly skipping through some playlists listed on https://musicstax.com/ we can see that a quick search for rock songs already shows a spotify popularity rating between 32% and 80%. 
+So as a rough starting point, lets say that average likings for songs altogether are around 50 points and that the error variance should be around 25 points, meaning that for any single song, the error will cause the scores to vary widely between 0 and 100.
+So we set:
+
+```{r}
+b0 <- 50
+total_error <- 25
+```
+
+Next let's assume that 25% of that noise is caused by people's overall differences in music liking:
+
+```{r}
+sd_u0 <- 0.25 * total_error
+```
+
+Next, lets assume that another 5% of the error is caused by people's idiosyncratic differences in how much they like rock over pop songs:
+
+```{r}
+sd_u1 <- 0.05 * total_error
+```
+
+Finally, lets assume that 25% of the error is caused by idiosyncratic differences in how much people like individual songs:
+
+```{r}
+sd_w0 <- 0.25 * total_error
+```
+
+Of course, in total these numbers should be lower than 1, because we cannot partition more variance than we have in the error term.
+
+That leaves us with the new residual noise:
+
+```{r}
+sd_error <- sqrt(total_error - sd_u0 - sd_u1 - sd_w0)
+```
+
+Now we can simulate the data again.
+
+```{r}
+song_data7 <- song_data_large
+set.seed(123)
+U0 <- rnorm(n_participants_large, 0, sd_u0)
+U1 <- rnorm(n_participants_large, 0, sd_u1)
+W0 <- rnorm(length(unique(song_data7$song)), 0, sd_w0)
+error <- rnorm(nrow(song_data7), 0, sd_error)
+
+for(i in 1:nrow(song_data7)){
+
+  u0 <- U0[song_data7$participant[i]]
+  u1 <- U1[song_data7$participant[i]]
+  w0 <- W0[which(unique(song_data5$song) == song_data7$song[i])]
+  x <- ifelse(song_data7$genre[i] == "rock", 1, 0)
+
+  song_data7$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error[i]
+}
+```
+
+and fit the model again
+
+```{r}
+song_model_10 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_data7)
+summary(song_model_10)
+```
+
+Of course, this is still pretty much eye-balling, but if you have more informed domain knowledge, which you might have if you are running an experiment in an existing research line, this can be a good starting point to think about how much of the variance you expect to be attributable to different sources.
+
+# Part III 🎉 : Simulating nested data
+
+It could be possible that the liking that people show for music also depend on what country they live in as music could be more or less important in a culture. To address this, we could add a random term that identifies different countries. For instance, we could assume that our 100 participants in this simulation come from 5 different countries (I am not qualified to make any actual statements about which countries would show which effect and do not want to imply things only for the sake of an example so I will just call the countries Country A - Country E). We can also assume that the countries are of different size so that they will not be equally represented by the 500 people in our sample.
+
+```{r}
+
+song_data8 <- song_data_large
+set.seed(123)
+n_participants <- 500
+country_list <- sample(c("A", "B", "C", "D", "E"),size = length(unique(song_data8$participant)), prob = c(0.25, 0.15, 0.05, 0.35, 0.2), replace = T)
+
+for(i in 1:nrow(song_data8)){
+  song_data8$country[i] <- country_list[song_data8$participant[i]]
+}
+View(song_data8)
+```
+
+
+Lets assume that 10% of the variance that we previously thought was attributed to participants is actually attributed to countries.
+
+```{r}
+sd_u0 <- 7
+sd_cu0 <- 0.1 * sd_u0
+sd_u0 <- 7*0.9
+```
+
+Now we can simulate the data again.
+
+```{r}
+set.seed(123)
+U0 <- rnorm(n_participants, 0, sd_u0)
+CU0 <- rnorm(length(unique(song_data8$country)), 0, sd_cu0)
+U1 <- rnorm(n_participants, 0, sd_u1)
+W0 <- rnorm(length(unique(song_data8$song)), 0, sd_w0)
+error <- rnorm(nrow(song_data8), 0, sd_error)
+
+for(i in 1:nrow(song_data8)){
+
+  u0 <- U0[song_data8$participant[i]]
+  cu0 <- CU0[which(unique(song_data8$country) == song_data8$country[i])]
+  u1 <- U1[song_data8$participant[i]]
+  w0 <- W0[which(unique(song_data8$song) == song_data8$song[i])]
+  x <- ifelse(song_data8$genre[i] == "rock", 1, 0)
+
+  song_data8$Y[i] <- b0  + u0 + cu0 + w0  + (b1 + u1) * x + error[i]
+}
+```
+
+and fit the model again
+
+```{r}
+song_model_11 <- lmer(Y ~ genre + (1+genre|participant) + (1|song) + (1|country), data = song_data8)
+summary(song_model_11)
+```
+
+We can see that the model shows a singularity warning in this case which might be due to the fact that A) the random intercept term for country is very small compared to the other terms and B) the random correlation for the country intercept and slope is estimated based on only 5 pairs of observations (1 for each country), which is obviously very little information.

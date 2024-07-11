@@ -11,7 +11,7 @@
 
 <meta name="author" content="Julian Quandt" />
 
-<meta name="date" content="2024-07-10" />
+<meta name="date" content="2024-07-11" />
 
 <title>Commented Code from Talk</title>
 
@@ -1588,7 +1588,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Commented Code from Talk</h1>
 <h4 class="author">Julian Quandt</h4>
-<h4 class="date">July 10, 2024</h4>
+<h4 class="date">July 11, 2024</h4>
 
 </div>
 
@@ -1846,14 +1846,17 @@ y = premeasure + groupeffect + error
 <p>Now lets simulate the dependent variable based on this.</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true"></a></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true"></a>error &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data), <span class="dv">0</span>, <span class="dv">10</span>) <span class="co"># this is the error term that we add to the data</span></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true"></a></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true"></a>song_data1 &lt;-<span class="st"> </span>song_data</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true"></a></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data1)){</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true"></a>  song_data1<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>b1 <span class="op">*</span><span class="st"> </span><span class="kw">ifelse</span>(song_data1<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="op">+</span><span class="st"> </span>U0[song_data1<span class="op">$</span>participant[i]] <span class="op">+</span><span class="st"> </span>error[i]</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true"></a>}</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true"></a><span class="kw">View</span>(song_data1)</span></code></pre></div>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true"></a>sd_error &lt;-<span class="st"> </span><span class="dv">10</span> <span class="co"># this is the standard deviation of the error term aka residual variance</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true"></a>error &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data), <span class="dv">0</span>, sd_error) </span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true"></a>song_data1 &lt;-<span class="st"> </span>song_data</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true"></a></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data1)){</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data1<span class="op">$</span>participant[i]]</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data1<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true"></a>  song_data1<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>u0 <span class="op">+</span><span class="st"> </span>b1 <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true"></a>}</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true"></a><span class="kw">View</span>(song_data1)</span></code></pre></div>
 <p>In the above, we defined an error term that is again different for each observation. This is because, each single observation has some unknown factors that influence it. Hence, we need to have as many values for this error as we have observations. For participants, we only have 10 values, as we only have 10 participants.</p>
 <p>Now we can fit a mixed model to this data.</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true"></a><span class="kw">library</span>(lme4)</span></code></pre></div>
@@ -1894,11 +1897,14 @@ y = premeasure + groupeffect + error
 <span id="cb34-4"><a href="#cb34-4" aria-hidden="true"></a>U0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants, <span class="dv">0</span>, sd_u0) <span class="co"># this is the random intercept for each participant</span></span></code></pre></div>
 <p>Now we can simulate the data again.</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true"></a>error &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data), <span class="dv">0</span>, <span class="dv">10</span>) <span class="co"># this is the error term that we add to the data</span></span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true"></a>song_data2 &lt;-<span class="st"> </span>song_data</span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data2)){</span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true"></a>  song_data2<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>b1 <span class="op">*</span><span class="st"> </span><span class="kw">ifelse</span>(song_data2<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="op">+</span><span class="st"> </span>U0[song_data2<span class="op">$</span>participant[i]] <span class="op">+</span><span class="st"> </span>error[i]</span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true"></a>}</span></code></pre></div>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true"></a>song_data2 &lt;-<span class="st"> </span>song_data</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data2)){</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data2<span class="op">$</span>participant[i]]</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data2<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true"></a>  song_data2<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>u0 <span class="op">+</span><span class="st"> </span>b1 <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true"></a>}</span></code></pre></div>
 <p>and again fit the model</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true"></a>song_model_<span class="dv">2</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>participant), <span class="dt">data =</span> song_data2)</span></code></pre></div>
 <pre><code>## boundary (singular) fit: see help(&#39;isSingular&#39;)</code></pre>
@@ -1976,6 +1982,548 @@ y = premeasure + groupeffect + error
 ## F-statistic: 17.23 on 1 and 398 DF,  p-value: 4.057e-05</code></pre>
 <p>We see that in the latter case, when we just run a model without accounting for the random intercept, the p-value for the genre effect is larger, and the error variance is larger. This is because the model will try to account for the participant-specific differences in overall liking by attributing this to the error term. This in turn decreases the power of the model to detect the genre effect, and decreases the amount of explained variance.</p>
 </div>
+<div id="simulating-random-slopes" class="section level2" number="2.2">
+<h2 number="2.2"><span class="header-section-number">2.2</span> Simulating Random Slopes</h2>
+<p>If we want to add a participant-specific adjustment to the effect of genre on their overall liking, we can do so by adding a random slope.</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true"></a>sd_u0 &lt;-<span class="st"> </span><span class="dv">7</span> <span class="co"># this is the standard deviation of the random intercepts</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true"></a>U0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants, <span class="dv">0</span>, sd_u0) <span class="co"># this is the random intercept for each participant</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true"></a>sd_u1 &lt;-<span class="st"> </span><span class="fl">3.5</span> <span class="co"># this is the standard deviation of the random slopes</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true"></a>U1 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants, <span class="dv">0</span>, sd_u1) <span class="co"># this is the set of random slopes for each participant</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true"></a><span class="kw">hist</span>(<span class="dv">5</span><span class="op">+</span>U1, <span class="dt">main =</span> <span class="st">&quot;Participant-specific genre effect&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;Liking for Rock over Pop&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" width="576" /></p>
+<p>We can see in the histogram, that for some people the difference is now very strongly positive, indicating that they LOVE rock way more than pop, while for others the difference is very strongly negative, indicating that they LOVE pop way more than rock.</p>
+<p>Now we can simulate the data again.</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true"></a>song_data3 &lt;-<span class="st"> </span>song_data</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data3)){</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data3<span class="op">$</span>participant[i]]</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1[song_data3<span class="op">$</span>participant[i]]</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data3<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true"></a></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true"></a>  song_data3<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>u0 <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true"></a>song_model_<span class="dv">5</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant), <span class="dt">data =</span> song_data3)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">5</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant)
+##    Data: song_data3
+## 
+## REML criterion at convergence: 2979.9
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.7567 -0.6601 -0.0387  0.6492  3.2906 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr
+##  participant (Intercept) 59.999   7.746        
+##              genrerock    9.812   3.132    0.47
+##  Residual                92.939   9.640        
+## Number of obs: 400, groups:  participant, 10
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   75.726      2.543  29.783
+## genrerock      5.658      1.382   4.094
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock 0.195</code></pre>
+</div>
+<div id="adding-crossed-random-effects-for-songs" class="section level2" number="2.3">
+<h2 number="2.3"><span class="header-section-number">2.3</span> Adding crossed random effects for songs</h2>
+<p>If we want to add a random effect for songs, we can do so by adding a random effect for songs that is independent of the random effect for participants.</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true"></a></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true"></a>sd_w0 &lt;-<span class="st"> </span><span class="dv">15</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true"></a>W0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_songs<span class="op">*</span><span class="dv">2</span>, <span class="dv">0</span>, sd_w0) <span class="co">#n_songs*2 as n_songs is the number of songs per genre</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true"></a></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true"></a></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true"></a><span class="kw">hist</span>(<span class="dv">75</span><span class="op">+</span>W0, <span class="dt">main =</span> <span class="st">&quot;Song-specific music liking&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;Liking score (0-100)&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" width="576" /></p>
+<p>The histogram shows that songs differ hugely in how much they are liked overall in this new model.</p>
+<p>Now we can simulate the data again.</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true"></a>song_data4 &lt;-<span class="st"> </span>song_data</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true"></a></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data4)){</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true"></a></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data4<span class="op">$</span>participant[i]]</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1[song_data4<span class="op">$</span>participant[i]]</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data4<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data4<span class="op">$</span>song[i])]</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data4<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true"></a></span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true"></a>  song_data4<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0  <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true"></a>song_model_<span class="dv">6</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song), <span class="dt">data =</span> song_data4)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">6</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data4
+## 
+## REML criterion at convergence: 3105.9
+## 
+## Scaled residuals: 
+##      Min       1Q   Median       3Q      Max 
+## -2.51375 -0.65164 -0.03799  0.59340  3.01967 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr
+##  song        (Intercept) 185.828  13.632       
+##  participant (Intercept)  59.865   7.737       
+##              genrerock     9.528   3.087   0.49
+##  Residual                 95.788   9.787       
+## Number of obs: 400, groups:  song, 40; participant, 10
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   75.175      3.969  18.938
+## genrerock      8.115      4.527   1.793
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.479</code></pre>
+<p>We can see, that the model does a decent job at recovering the estimates. However, now the fixed effect of genre (supposed to be 5) is closer to 8, which seems a little odd. The reason for this is that with this small sample size with only 10 people, making the estimation of the parameters more difficult.</p>
+<p>Let’s see what happens if we increase sample size to 100 people listening to 80 songs each:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true"></a>n_participants_large &lt;-<span class="st"> </span><span class="dv">100</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true"></a>n_genres &lt;-<span class="st"> </span><span class="dv">2</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true"></a>n_songs &lt;-<span class="st"> </span><span class="dv">80</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true"></a></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true"></a>song_data_large &lt;-<span class="st"> </span><span class="kw">generate_design</span>(<span class="dt">n_participants =</span> n_participants_large, <span class="dt">n_genres =</span> n_genres, <span class="dt">n_songs =</span> n_songs)</span></code></pre></div>
+<p>Lets again create random effects for participants and songs in this larger sample</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true"></a>song_data5 &lt;-<span class="st"> </span>song_data_large</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true"></a></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">456</span>)</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true"></a>U0_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u0)</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true"></a>U1_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u1)</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true"></a>W0_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">length</span>(<span class="kw">unique</span>(song_data5<span class="op">$</span>song)), <span class="dv">0</span>, sd_w0) </span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true"></a>error_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data5), <span class="dv">0</span>, sd_error)</span></code></pre></div>
+<p>now lets simulate the data again</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data5)){</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0_large[song_data5<span class="op">$</span>participant[i]]</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1_large[song_data5<span class="op">$</span>participant[i]]</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data5<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data5<span class="op">$</span>song[i])]</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data5<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true"></a></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true"></a>  song_data5<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0  <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error_large[i]</span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true"></a>song_model_<span class="dv">7</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song), <span class="dt">data =</span> song_data5)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">7</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data5
+## 
+## REML criterion at convergence: 30266.6
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.3308 -0.6681 -0.0243  0.6466  3.8329 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr 
+##  participant (Intercept)  51.14    7.151        
+##              genrerock    15.26    3.906   -0.04
+##  song        (Intercept) 184.30   13.576        
+##  Residual                 97.37    9.868        
+## Number of obs: 4000, groups:  participant, 100; song, 40
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   75.362      3.127  24.104
+## genrerock      7.229      4.322   1.673
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.686</code></pre>
+<p>The estimates are closer to what they are supposed to be now. Note that, however, even in this large sample, if we repeated the simulation with another seed, the estimates will still widely vary. Lets try to change the seed, and resample random effect values</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">4356</span>) <span class="co"># use other simulation seed</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true"></a>U0_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u0)</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true"></a>U1_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u1)</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true"></a>W0_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">length</span>(<span class="kw">unique</span>(song_data5<span class="op">$</span>song)), <span class="dv">0</span>, sd_w0) </span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true"></a>error_large &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data5), <span class="dv">0</span>, sd_error)</span></code></pre></div>
+<p>and resimulate the DV</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data5)){</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true"></a></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0_large[song_data5<span class="op">$</span>participant[i]]</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1_large[song_data5<span class="op">$</span>participant[i]]</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data5<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data5<span class="op">$</span>song[i])]</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data5<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true"></a></span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true"></a>  song_data5<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0  <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error_large[i]</span>
+<span id="cb58-9"><a href="#cb58-9" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model again</p>
+<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true"></a>song_model_<span class="dv">8</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song), <span class="dt">data =</span> song_data5)</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">8</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data5
+## 
+## REML criterion at convergence: 30313.9
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.2992 -0.6688  0.0107  0.6772  3.5155 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr
+##  participant (Intercept)  51.863   7.202       
+##              genrerock     7.772   2.788   0.13
+##  song        (Intercept) 177.754  13.332       
+##  Residual                 99.443   9.972       
+## Number of obs: 4000, groups:  participant, 100; song, 40
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   73.873      3.075  24.023
+## genrerock      7.886      4.237   1.861
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.684</code></pre>
+<p>Now the estimate is again closer to 6. This is not a bug but a feature of mixed-effects model simulations. We assume that we only tested our hypothesis on a <em>random</em> subset of people from the population and other people might behave differently. Similarly, we did not use <em>all</em> pop and rock songs out there, so the results depend on the idiosyncratic sample of songs that we used. By simulating random effects, we can see what influence this has on the results. In a power simulation, these factors will thus rightfully influence the power we get, as individual simulations acknowledge the uncertainty that we have about the sample of songs and participants that we might end up with.</p>
+</div>
+</div>
+<div id="part-iii---adding-random-correlations" class="section level1" number="3">
+<h1 number="3"><span class="header-section-number">3</span> Part III - 👍: Adding random correlations</h1>
+<p>Random effects terms can also be correlated: For instance, has a high overall liking of music across both genres (𝛽_0+𝑢_0 close to 100), this would indicate that they cannot dislike either music genre much or else they would not be able to have an average liking of close to 100 across genres. If they liked one music type (e.g. pop) with only 60 points, to have an average liking of e.g. 95, they would have to like rock music at 130, because (60+130)/2 = 95. However, 130 is not a possible value on our scale and therefore this can’t be the case. As a consequence, any person with high average liking across genres, is unlikely to have large values of 𝑢_1 . In other terms, across people the values of 𝑢_0 and 𝑢_1 will be negatively correlated.</p>
+<p>To simulate this, we need to make sure that across people, the values of 𝑢_0 and 𝑢_1 are negatively correlated.</p>
+<p>First let’s have a look at where the correlations show up in the model output:</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">8</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data5
+## 
+## REML criterion at convergence: 30313.9
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.2992 -0.6688  0.0107  0.6772  3.5155 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr
+##  participant (Intercept)  51.863   7.202       
+##              genrerock     7.772   2.788   0.13
+##  song        (Intercept) 177.754  13.332       
+##  Residual                 99.443   9.972       
+## Number of obs: 4000, groups:  participant, 100; song, 40
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   73.873      3.075  24.023
+## genrerock      7.886      4.237   1.861
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.684</code></pre>
+<p>We can see that next to the estimate for the random effect of participant:genrerock, there is a correlation estimate of -0.03. This is the correlation between the random intercept and the random slope for genre rock. That it is so small makes sense, as we did not simulate any correlation between the random effects.</p>
+<p>To simulate this, we can use the <code>MASS</code> package to simulate correlated random effects. For this, we will calculate the covariance matrix of the random effects and then use the <code>mvrnorm</code> function to simulate the random effects. The covariance matrix is basically the random effect sizes that we put in before, expressed in terms of variances and covariance instead of standard deviations. For instance before we set sd_u0 (the random intercept term for participants) to 7 and sd_01 (the random slope term for genre effects over participants) to 3.5. Assuming a correlation of -0.2 between the random effects, the covariance can be calculated as: 7<em>3.5</em>-0.2 = -4.9</p>
+<p>To create a matrix <code>sigma_u01</code> containing this information we can run:</p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true"></a><span class="kw">library</span>(MASS)</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true"></a>corr_u01 &lt;-<span class="st"> </span><span class="fl">-0.2</span> <span class="co"># this will be the correlation between the random effects</span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true"></a>sigma_u01 &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(sd_u0<span class="op">^</span><span class="dv">2</span>, sd_u0<span class="op">*</span>sd_u1<span class="op">*</span>corr_u01, sd_u0<span class="op">*</span>sd_u1<span class="op">*</span>corr_u01, sd_u1<span class="op">^</span><span class="dv">2</span>), <span class="dt">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true"></a><span class="kw">print</span>(sigma_u01)</span></code></pre></div>
+<pre><code>##      [,1]  [,2]
+## [1,] 49.0 -4.90
+## [2,] -4.9 12.25</code></pre>
+<p>We see that now this contains a 2x2 matrix with the variance of sd_u0 (7^2 = 49) and next to it the covariance 7<em>3.5</em>-0.2 = -4.9. In the second row, we again have the covariance, followed by the variance of sd_u1 (3.5^2 = 12.25). Thus the matrix looks like this:</p>
+<div class="line-block">sd_u0^2 | sd_u0<em>sd_u1</em>corr_u01 |<br />
+sd_u0<em>sd_u1</em>corr_u01 | sd_u1^2 |</div>
+<p>Now we can simulate the random effects using this covariance matrix.</p>
+<div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true"></a>U01 &lt;-<span class="st"> </span><span class="kw">mvrnorm</span>(n_participants_large,<span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>),sigma_u01)</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true"></a><span class="kw">print</span>(U01)</span></code></pre></div>
+<pre><code>##               [,1]         [,2]
+##   [1,]   4.2299629   1.88676345
+##   [2,]   1.4942985  -1.07851287
+##   [3,] -10.7799108   2.26031282
+##   [4,]  -0.3387187   1.23860025
+##   [5,]  -0.4819348   3.33307179
+##   [6,] -11.9614904   1.72220029
+##   [7,]  -2.8724893   3.07348188
+##   [8,]   9.5760765   4.47643749
+##   [9,]   4.9666666   0.65567037
+##  [10,]   2.7065627  -3.51250082
+##  [11,]  -8.2967231   3.06421949
+##  [12,]  -2.7827921  -1.72439770
+##  [13,]  -2.0835713   5.83234886
+##  [14,]  -0.7486317   0.28902346
+##  [15,]   3.6531655  -2.26349247
+##  [16,] -12.6166701   0.61852252
+##  [17,]  -3.5247588   0.09877663
+##  [18,]  14.0223953   0.36402460
+##  [19,]  -4.5235121   3.51250098
+##  [20,]   3.7562821   3.02683728
+##  [21,]   7.4077232  -1.37498825
+##  [22,]   1.9422035   3.00116451
+##  [23,]   7.3848175   0.71790212
+##  [24,]   5.2053938   0.19784080
+##  [25,]   3.5502658  -6.80105178
+##  [26,]  12.0718282   0.65826995
+##  [27,]  -5.9569725  -0.02820325
+##  [28,]  -1.1059749  -0.12295523
+##  [29,]   8.3768111   2.20736886
+##  [30,]  -8.7275690   1.38871898
+##  [31,]  -3.6187557  -4.48949834
+##  [32,]   1.8614915  -1.79537858
+##  [33,]  -6.2715904   0.68016918
+##  [34,]  -5.9475968   2.23116327
+##  [35,]  -4.8306128   7.68831506
+##  [36,]  -5.3116592  -3.19140066
+##  [37,]  -3.2230579   5.44135991
+##  [38,]   0.1049504  -2.55633395
+##  [39,]   1.2923190  -6.72934283
+##  [40,]   3.2971565   4.52938193
+##  [41,]   4.5425449  -3.00671771
+##  [42,]   1.5685787   0.69540121
+##  [43,]   9.5360093   4.15251118
+##  [44,] -14.4817791   7.10239172
+##  [45,]  -7.7298312   6.51608613
+##  [46,]   8.0810478   0.76531159
+##  [47,]   3.4616467   4.56920475
+##  [48,]   2.9555179  -2.75109665
+##  [49,]  -6.3785149  -6.38045433
+##  [50,]   1.1521651   4.27146361
+##  [51,]  -2.1184007  -2.42919671
+##  [52,]  -0.1410166  -2.62407579
+##  [53,]   0.1524312  -1.16147763
+##  [54,]  -9.1146455   4.65936385
+##  [55,]   1.6301134   0.19684268
+##  [56,] -10.4699186   2.33550091
+##  [57,]  10.5703413  -3.31970062
+##  [58,]  -3.9192314   1.79335106
+##  [59,]  -1.2977363  -3.18698047
+##  [60,]  -1.3427437   1.46307926
+##  [61,]  -3.1181770  -3.20867167
+##  [62,]   3.9736811   3.08441829
+##  [63,]   2.8856353   3.95195560
+##  [64,]   5.6809940 -11.88120248
+##  [65,]   7.6720576   0.42701635
+##  [66,]  -2.2524685  -0.72958711
+##  [67,]  -3.4129884  -1.74010715
+##  [68,]  -0.1561242   1.68280857
+##  [69,]  -6.6717569  -0.90173112
+##  [70,] -14.4852024   0.63037159
+##  [71,]   3.5256837   0.27806416
+##  [72,]  16.1029220  -2.33454362
+##  [73,]  -7.0109963   1.03580737
+##  [74,]   4.0122332  -7.83948718
+##  [75,]   5.1345988   1.87449558
+##  [76,]  -6.6794477   4.64132208
+##  [77,]   1.9726925  -0.38835600
+##  [78,]   8.3904741  -2.16638126
+##  [79,]  -1.4598266  -1.30866514
+##  [80,]   1.1732051   1.42127726
+##  [81,]   0.4304506   3.59735496
+##  [82,]  -3.2507581  -3.91451991
+##  [83,]   2.7442117   0.84184442
+##  [84,]  -4.1184569   3.51374170
+##  [85,]   1.6449140   0.59633973
+##  [86,]  -2.2305379   0.96982656
+##  [87,]  -8.1538499  -2.74535749
+##  [88,]  -3.0776847   0.11213989
+##  [89,]   1.9431455  -2.84568925
+##  [90,]  -7.8045270   2.73838305
+##  [91,]  -7.0355379   0.18509353
+##  [92,]  -3.6873609   1.59887930
+##  [93,]  -1.7096478  -0.10096597
+##  [94,]   4.7829088   2.44984523
+##  [95,]  -8.9252289   5.67372359
+##  [96,]   3.3092688  -7.29641111
+##  [97,] -15.5466073  -0.02684938
+##  [98,] -10.1528798   5.63004405
+##  [99,]   1.9171542   1.84883528
+## [100,]   7.6953591   3.06507565</code></pre>
+<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true"></a><span class="kw">cor</span>(U01)</span></code></pre></div>
+<pre><code>##            [,1]       [,2]
+## [1,]  1.0000000 -0.2275207
+## [2,] -0.2275207  1.0000000</code></pre>
+<p>You can read this as follows:</p>
+<p>create a multivariate normal distribution (i.e. a data-set containing values of two correlated normal distributions), both of which have mean 0 (as we are simulating random effects as sd again) by using the covariance matrix sigma_u01.</p>
+<p>We see that for each of our 100 participants, we have a value for the random intercept and a value for the random slope that are correlated with -0.2275207, which is close to what we wanted.</p>
+<p>Now we can simulate the data again.</p>
+<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true"></a>song_data6 &lt;-<span class="st"> </span>song_data_large</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true"></a></span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true"></a>U0_correlated &lt;-<span class="st"> </span>U01[,<span class="dv">1</span>] <span class="co"># as U0 we take the first column of the U01 matrix, as this contains the random intercept terms</span></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true"></a>U1_correlated &lt;-<span class="st"> </span>U01[,<span class="dv">2</span>] <span class="co"># as U1 we take the second column of the U01 matrix, as this contains the random slope terms</span></span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true"></a></span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true"></a></span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data6)){</span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true"></a></span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0_correlated[song_data6<span class="op">$</span>participant[i]]</span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1_correlated[song_data6<span class="op">$</span>participant[i]]</span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data6<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data6<span class="op">$</span>song[i])]</span>
+<span id="cb69-12"><a href="#cb69-12" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data6<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb69-13"><a href="#cb69-13" aria-hidden="true"></a></span>
+<span id="cb69-14"><a href="#cb69-14" aria-hidden="true"></a>  song_data6<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0  <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error_large[i]</span>
+<span id="cb69-15"><a href="#cb69-15" aria-hidden="true"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true"></a>song_model_<span class="dv">9</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song), <span class="dt">data =</span> song_data6)</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">9</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data6
+## 
+## REML criterion at convergence: 30297
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.3192 -0.6532  0.0045  0.6716  3.2316 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr 
+##  participant (Intercept)  41.73    6.460        
+##              genrerock    10.47    3.236   -0.26
+##  song        (Intercept) 177.73   13.331        
+##  Residual                 99.44    9.972        
+## Number of obs: 4000, groups:  participant, 100; song, 40
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)   73.796      3.058  24.129
+## genrerock      7.856      4.240   1.853
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.693</code></pre>
+<p>We can see, that now our estimated correlation is close to the correlation that we simulated.</p>
+</div>
+<div id="part-iii-️-how-to-come-up-with-parameter-values" class="section level1" number="4">
+<h1 number="4"><span class="header-section-number">4</span> Part III ❤️ : How to come up with parameter values</h1>
+<p>In the above, we basically came up with parameter values out of thin air and just added all of the random terms on top of each other. This is usually not what we would want to do. In fact, as we already saw earlier, compared to a fixed-effects-only linear model (lm) the advantage of a mixed-model (lmer) is that can partition the residual variance (i.e. unexplained variance) into different sources of variance, which will of course <em>shrink</em> the overall variance. In the steps above, we never changed the value of the error term (it was always kept at 10). However, usually we would expect the total error to <em>decrease</em> as we add random effects, as some of the noise that appears to be random at first, will turn out to be attributable to participants (as in the random intercept term) or idiosyncratic liking differences in genres across participants (the random slope term) or idiosyncratic influences of songs.</p>
+<p>Thus, instead of coming up with numbers for all of them, we can think about how much of the overall noise (the residual variance) will probably be attributable to participants, genres, and songs.</p>
+<p>For instance, in our music example, we might think that just by factors we do not know, likings will vary strongly</p>
+<p>Instead, by quickly skipping through some playlists listed on <a href="https://musicstax.com/" class="uri">https://musicstax.com/</a> we can see that a quick search for rock songs already shows a spotify popularity rating between 32% and 80%. So as a rough starting point, lets say that average likings for songs altogether are around 50 points and that the error variance should be around 25 points, meaning that for any single song, the error will cause the scores to vary widely between 0 and 100. So we set:</p>
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true"></a>b0 &lt;-<span class="st"> </span><span class="dv">50</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true"></a>total_error &lt;-<span class="st"> </span><span class="dv">25</span></span></code></pre></div>
+<p>Next let’s assume that 25% of that noise is caused by people’s overall differences in music liking:</p>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true"></a>sd_u0 &lt;-<span class="st"> </span><span class="fl">0.25</span> <span class="op">*</span><span class="st"> </span>total_error</span></code></pre></div>
+<p>Next, lets assume that another 5% of the error is caused by people’s idiosyncratic differences in how much they like rock over pop songs:</p>
+<div class="sourceCode" id="cb74"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true"></a>sd_u1 &lt;-<span class="st"> </span><span class="fl">0.05</span> <span class="op">*</span><span class="st"> </span>total_error</span></code></pre></div>
+<p>Finally, lets assume that 25% of the error is caused by idiosyncratic differences in how much people like individual songs:</p>
+<div class="sourceCode" id="cb75"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true"></a>sd_w0 &lt;-<span class="st"> </span><span class="fl">0.25</span> <span class="op">*</span><span class="st"> </span>total_error</span></code></pre></div>
+<p>Of course, in total these numbers should be lower than 1, because we cannot partition more variance than we have in the error term.</p>
+<p>That leaves us with the new residual noise:</p>
+<div class="sourceCode" id="cb76"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true"></a>sd_error &lt;-<span class="st"> </span><span class="kw">sqrt</span>(total_error <span class="op">-</span><span class="st"> </span>sd_u0 <span class="op">-</span><span class="st"> </span>sd_u1 <span class="op">-</span><span class="st"> </span>sd_w0)</span></code></pre></div>
+<p>Now we can simulate the data again.</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true"></a>song_data7 &lt;-<span class="st"> </span>song_data_large</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true"></a>U0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u0)</span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true"></a>U1 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants_large, <span class="dv">0</span>, sd_u1)</span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true"></a>W0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">length</span>(<span class="kw">unique</span>(song_data7<span class="op">$</span>song)), <span class="dv">0</span>, sd_w0)</span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true"></a>error &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data7), <span class="dv">0</span>, sd_error)</span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true"></a></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data7)){</span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true"></a></span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data7<span class="op">$</span>participant[i]]</span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1[song_data7<span class="op">$</span>participant[i]]</span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data5<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data7<span class="op">$</span>song[i])]</span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data7<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true"></a></span>
+<span id="cb77-15"><a href="#cb77-15" aria-hidden="true"></a>  song_data7<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0  <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb77-16"><a href="#cb77-16" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model again</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true"></a>song_model_<span class="dv">10</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song), <span class="dt">data =</span> song_data7)</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">10</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song)
+##    Data: song_data7
+## 
+## REML criterion at convergence: 85881.5
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.6115 -0.6631 -0.0045  0.6678  3.8309 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev. Corr 
+##  song        (Intercept) 39.321   6.271         
+##  participant (Intercept) 32.633   5.713         
+##              genrerock    1.475   1.214    -0.10
+##  Residual                11.270   3.357         
+## Number of obs: 16000, groups:  song, 160; participant, 100
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)  50.4925     0.9051  55.785
+## genrerock     5.8470     1.0003   5.845
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.552</code></pre>
+<p>Of course, this is still pretty much eye-balling, but if you have more informed domain knowledge, which you might have if you are running an experiment in an existing research line, this can be a good starting point to think about how much of the variance you expect to be attributable to different sources.</p>
+</div>
+<div id="part-iii-simulating-nested-data" class="section level1" number="5">
+<h1 number="5"><span class="header-section-number">5</span> Part III 🎉 : Simulating nested data</h1>
+<p>It could be possible that the liking that people show for music also depend on what country they live in as music could be more or less important in a culture. To address this, we could add a random term that identifies different countries. For instance, we could assume that our 100 participants in this simulation come from 5 different countries (I am not qualified to make any actual statements about which countries would show which effect and do not want to imply things only for the sake of an example so I will just call the countries Country A - Country E). We can also assume that the countries are of different size so that they will not be equally represented by the 500 people in our sample.</p>
+<div class="sourceCode" id="cb80"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true"></a>song_data8 &lt;-<span class="st"> </span>song_data_large</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true"></a>n_participants &lt;-<span class="st"> </span><span class="dv">500</span></span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true"></a>country_list &lt;-<span class="st"> </span><span class="kw">sample</span>(<span class="kw">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>, <span class="st">&quot;C&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;E&quot;</span>),<span class="dt">size =</span> <span class="kw">length</span>(<span class="kw">unique</span>(song_data8<span class="op">$</span>participant)), <span class="dt">prob =</span> <span class="kw">c</span>(<span class="fl">0.25</span>, <span class="fl">0.15</span>, <span class="fl">0.05</span>, <span class="fl">0.35</span>, <span class="fl">0.2</span>), <span class="dt">replace =</span> T)</span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true"></a></span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data8)){</span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true"></a>  song_data8<span class="op">$</span>country[i] &lt;-<span class="st"> </span>country_list[song_data8<span class="op">$</span>participant[i]]</span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true"></a>}</span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true"></a><span class="kw">View</span>(song_data8)</span></code></pre></div>
+<p>Lets assume that 10% of the variance that we previously thought was attributed to participants is actually attributed to countries.</p>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true"></a>sd_u0 &lt;-<span class="st"> </span><span class="dv">7</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true"></a>sd_cu0 &lt;-<span class="st"> </span><span class="fl">0.1</span> <span class="op">*</span><span class="st"> </span>sd_u0</span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true"></a>sd_u0 &lt;-<span class="st"> </span><span class="dv">7</span><span class="op">*</span><span class="fl">0.9</span></span></code></pre></div>
+<p>Now we can simulate the data again.</p>
+<div class="sourceCode" id="cb82"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true"></a>U0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants, <span class="dv">0</span>, sd_u0)</span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true"></a>CU0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">length</span>(<span class="kw">unique</span>(song_data8<span class="op">$</span>country)), <span class="dv">0</span>, sd_cu0)</span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true"></a>U1 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n_participants, <span class="dv">0</span>, sd_u1)</span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true"></a>W0 &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">length</span>(<span class="kw">unique</span>(song_data8<span class="op">$</span>song)), <span class="dv">0</span>, sd_w0)</span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true"></a>error &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="kw">nrow</span>(song_data8), <span class="dv">0</span>, sd_error)</span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true"></a></span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(song_data8)){</span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true"></a></span>
+<span id="cb82-10"><a href="#cb82-10" aria-hidden="true"></a>  u0 &lt;-<span class="st"> </span>U0[song_data8<span class="op">$</span>participant[i]]</span>
+<span id="cb82-11"><a href="#cb82-11" aria-hidden="true"></a>  cu0 &lt;-<span class="st"> </span>CU0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data8<span class="op">$</span>country) <span class="op">==</span><span class="st"> </span>song_data8<span class="op">$</span>country[i])]</span>
+<span id="cb82-12"><a href="#cb82-12" aria-hidden="true"></a>  u1 &lt;-<span class="st"> </span>U1[song_data8<span class="op">$</span>participant[i]]</span>
+<span id="cb82-13"><a href="#cb82-13" aria-hidden="true"></a>  w0 &lt;-<span class="st"> </span>W0[<span class="kw">which</span>(<span class="kw">unique</span>(song_data8<span class="op">$</span>song) <span class="op">==</span><span class="st"> </span>song_data8<span class="op">$</span>song[i])]</span>
+<span id="cb82-14"><a href="#cb82-14" aria-hidden="true"></a>  x &lt;-<span class="st"> </span><span class="kw">ifelse</span>(song_data8<span class="op">$</span>genre[i] <span class="op">==</span><span class="st"> &quot;rock&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb82-15"><a href="#cb82-15" aria-hidden="true"></a></span>
+<span id="cb82-16"><a href="#cb82-16" aria-hidden="true"></a>  song_data8<span class="op">$</span>Y[i] &lt;-<span class="st"> </span>b0  <span class="op">+</span><span class="st"> </span>u0 <span class="op">+</span><span class="st"> </span>cu0 <span class="op">+</span><span class="st"> </span>w0  <span class="op">+</span><span class="st"> </span>(b1 <span class="op">+</span><span class="st"> </span>u1) <span class="op">*</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>error[i]</span>
+<span id="cb82-17"><a href="#cb82-17" aria-hidden="true"></a>}</span></code></pre></div>
+<p>and fit the model again</p>
+<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true"></a>song_model_<span class="dv">11</span> &lt;-<span class="st"> </span><span class="kw">lmer</span>(Y <span class="op">~</span><span class="st"> </span>genre <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">+</span>genre<span class="op">|</span>participant) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>song) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>country), <span class="dt">data =</span> song_data8)</span></code></pre></div>
+<pre><code>## boundary (singular) fit: see help(&#39;isSingular&#39;)</code></pre>
+<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true"></a><span class="kw">summary</span>(song_model_<span class="dv">11</span>)</span></code></pre></div>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: Y ~ genre + (1 + genre | participant) + (1 | song) + (1 | country)
+##    Data: song_data8
+## 
+## REML criterion at convergence: 85877.8
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.5963 -0.6630 -0.0062  0.6719  3.9245 
+## 
+## Random effects:
+##  Groups      Name        Variance  Std.Dev.  Corr 
+##  song        (Intercept) 3.921e+01 6.2615244      
+##  participant (Intercept) 3.301e+01 5.7455049      
+##              genrerock   1.265e+00 1.1248323 -0.03
+##  country     (Intercept) 8.154e-08 0.0002855      
+##  Residual                1.128e+01 3.3578698      
+## Number of obs: 16000, groups:  song, 160; participant, 100; country, 5
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)  51.4241     0.9064  56.733
+## genrerock     4.1781     0.9978   4.187
+## 
+## Correlation of Fixed Effects:
+##           (Intr)
+## genrerock -0.546
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help(&#39;isSingular&#39;)</code></pre>
+<p>We can see that the model shows a singularity warning in this case which might be due to the fact that A) the random intercept term for country is very small compared to the other terms and B) the random correlation for the country intercept and slope is estimated based on only 5 pairs of observations (1 for each country), which is obviously very little information.</p>
 </div>
 
 
