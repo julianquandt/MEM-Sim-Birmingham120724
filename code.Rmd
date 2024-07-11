@@ -108,7 +108,7 @@ error <- rnorm(n_participants, 0, 1)
 group <- rep(c(0, 1), each = n_participants / 2)
 
 design_matrix <- data.frame(pre_measure, group, error)
-design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.7, 0.5)
+design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.5+0.2, 0.5)
 
 design_matrix$Y <- design_matrix$pre_measure + design_matrix$group_effect + design_matrix$error
 ```
@@ -132,7 +132,8 @@ As we can see, the test statistics are again identical.
 
 Specifically, the squared t-values of the lm are identical to the F-values of the ancova.
 
-If we take a close look at parameter values, however, we might wonder why the parameter for the group effect is not 0.7 as we wanted but 0.94.
+If we take a close look at parameter values, however, we might wonder why the parameter for the group effect is not 0.2 as we wanted but 0.44.
+
 This is due to the fact that there is noise in the simulation and with only 100 people, the simulated scores might not be close to the parameter value that we intended to simulate.
 If we increase the number of participants, we can see that the parameter estimates get closer to the true value.
 
@@ -152,7 +153,7 @@ error <- rnorm(n_participants, 0, 1)
 group <- rep(c(0, 1), each = n_participants / 2)
 
 design_matrix <- data.frame(pre_measure, group, error)
-design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.7, 0.5)
+design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.5+0.2, 0.5)
 
 design_matrix$Y <- design_matrix$pre_measure + design_matrix$group_effect  + design_matrix$error
 ```
@@ -161,7 +162,7 @@ design_matrix$Y <- design_matrix$pre_measure + design_matrix$group_effect  + des
 summary(lm(Y ~ pre_measure + group, data = design_matrix))
 ```
 
-In this case, the parameter estimates are much closer to the intended value of 0.7.
+In this case, the parameter estimates are much closer to the intended value of 0.2.
 
 ## Short example of power simulation
 
@@ -213,9 +214,12 @@ This is basically doing what we did before, but in a function that we can call w
 ```{r}
 generate_design <- function(n_participants, n_genres, n_songs){
   
-  
   design_matrix <- expand.grid(participant = 1:n_participants, genre = 1:n_genres, song = 1:n_songs) # adding song to expand.grid
   design_matrix$genre <- ifelse(design_matrix$genre ==1, "rock", "pop")
+  design_matrix$genre <- factor(design_matrix$genre)
+  # make rock the reference level, so it gets 1 in the contrast matrix and pop gets -1
+  design_matrix$genre <- relevel(design_matrix$genre, ref = "rock")
+  contrasts(design_matrix$genre) <- contr.sum(2)
   design_matrix$song <- paste0(design_matrix$genre, "_", design_matrix$song) 
   return(design_matrix)
 }
@@ -270,7 +274,7 @@ song_data1 <- song_data
 
 for(i in 1:nrow(song_data1)){
   u0 <- U0[song_data1$participant[i]]
-  x <- ifelse(song_data1$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data1$genre[i] == "rock", 0.5, -0.5)
   song_data1$Y[i] <- b0 + u0 + b1 * x + error[i]
 }
 View(song_data1)
@@ -290,6 +294,17 @@ summary(song_model_1)
 ```
 
 We can see that the model estimates are very close to the values that we simulated.
+Note that the fixed effect is half the size of what we simulated.
+This is correct, given that we use contrast coding, meaning that the estimate indicates the difference of each group from the grand mean (i.e. the mean of both groups combined).
+As we wanted our intercept to represent overall liking for music across genres, this is the correct way to do this.
+We can check this with the emmeans package:
+
+```{r}
+library(emmeans)
+emmeans(song_model_1, "genre")
+```
+
+We see that the difference between the genres is 5 points, as we wanted.
 
 ## Convergence Warning: boundary (singular) fit: see ?isSingular
 
@@ -313,7 +328,7 @@ song_data2 <- song_data
 for(i in 1:nrow(song_data2)){
 
   u0 <- U0[song_data2$participant[i]]
-  x <- ifelse(song_data2$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data2$genre[i] == "rock", 0.5, -0.5)
 
   song_data2$Y[i] <- b0 + u0 + b1 * x + error[i]
 }
@@ -382,7 +397,7 @@ song_data3 <- song_data
 for(i in 1:nrow(song_data3)){
   u0 <- U0[song_data3$participant[i]]
   u1 <- U1[song_data3$participant[i]]
-  x <- ifelse(song_data3$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data3$genre[i] == "rock", 0.5, -0.5)
 
   song_data3$Y[i] <- b0 + u0 + (b1 + u1) * x + error[i]
 }
@@ -394,6 +409,12 @@ and fit the model
 ```{r}
 song_model_5 <- lmer(Y ~ genre + (1+genre|participant), data = song_data3)
 summary(song_model_5)
+```
+
+We can again see that the simulation worked out, with the new random slope estimate being half the size that we indicated, again as it is a contrast estimate.
+
+```{r}
+emmeans(song_model_5, "genre")
 ```
 
 ## Adding crossed random effects for songs
@@ -422,7 +443,7 @@ for(i in 1:nrow(song_data4)){
   u0 <- U0[song_data4$participant[i]]
   u1 <- U1[song_data4$participant[i]]
   w0 <- W0[which(unique(song_data4$song) == song_data4$song[i])]
-  x <- ifelse(song_data4$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data4$genre[i] == "rock", 0.5, -0.5)
 
   song_data4$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error[i]
 }
@@ -436,7 +457,7 @@ summary(song_model_6)
 ```
 
 We can see, that the model does a decent job at recovering the estimates.
-However, now the fixed effect of genre (supposed to be 5) is closer to 8, which seems a little odd.
+However, now the fixed effect of genre (supposed to be 2.5) is closer to 4, which seems a little odd.
 The reason for this is that with this small sample size with only 10 people, making the estimation of the parameters more difficult.
 
 Let's see what happens if we increase sample size to 100 people listening to 80 songs each:
@@ -455,7 +476,7 @@ Lets again create random effects for participants and songs in this larger sampl
 ```{r}
 song_data5 <- song_data_large
 
-set.seed(456)
+set.seed(999)
 U0_large <- rnorm(n_participants_large, 0, sd_u0)
 U1_large <- rnorm(n_participants_large, 0, sd_u1)
 W0_large <- rnorm(length(unique(song_data5$song)), 0, sd_w0) 
@@ -473,7 +494,7 @@ for(i in 1:nrow(song_data5)){
   u0 <- U0_large[song_data5$participant[i]]
   u1 <- U1_large[song_data5$participant[i]]
   w0 <- W0[which(unique(song_data5$song) == song_data5$song[i])]
-  x <- ifelse(song_data5$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data5$genre[i] == "rock", 0.5, -0.5)
 
   song_data5$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error_large[i]
 }
@@ -522,7 +543,7 @@ song_model_8 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_d
 summary(song_model_8)
 ```
 
-Now the estimate is again closer to 6. 
+Now the estimate is again closer to 4. 
 This is not a bug but a feature of mixed-effects model simulations.
 We assume that we only tested our hypothesis on a _random_ subset of people from the population and other people might behave differently. 
 Similarly, we did not use _all_ pop and rock songs out there, so the results depend on the idiosyncratic sample of songs that we used.
@@ -600,7 +621,7 @@ for(i in 1:nrow(song_data6)){
   u0 <- U0_correlated[song_data6$participant[i]]
   u1 <- U1_correlated[song_data6$participant[i]]
   w0 <- W0[which(unique(song_data6$song) == song_data6$song[i])]
-  x <- ifelse(song_data6$genre[i] == "rock", 1, 0)
+  x <- ifelse(song_data6$genre[i] == "rock", 0.5, -0.5)
 
   song_data6$Y[i] <- b0  + u0  + w0  + (b1 + u1) * x + error_large[i]
 }
@@ -746,3 +767,109 @@ summary(song_model_11)
 ```
 
 We can see that the model shows a singularity warning in this case which might be due to the fact that A) the random intercept term for country is very small compared to the other terms and B) the random correlation for the country intercept and slope is estimated based on only 5 pairs of observations (1 for each country), which is obviously very little information.
+
+# Part III 😮 : Simulating binomial responses
+
+In many experiments, our outcomes are actually not rating scales, but might be binary.
+For example, we could have an experiment that asks participants to classify words as "positive" or "negative" based on their emotional content.
+
+In this case, we can simulate the data in a similar way as before, but instead of simulating a continuous dependent variable, we can simulate a binary dependent variable.
+
+For instance, we could simulate that people are more likely to classify words as positive if they are presented in green vs. red color for a very brief period of time and giving very little time to think about it.
+We will code the DV in terms of it correctness, where 1 indicates a correct classification and 0 an incorrect classification.
+We assume that people are quite good at this, and that the overall probability of a correct classification is 0.8.
+
+
+```{r}
+b0 <- 0.8
+```
+
+The effect of color is assumed to rather small with 0.05, meaning that people are 5% more likely to classify words as positive if they are presented in green vs. red color.
+
+```{r}
+b1 <- 0.05
+```
+
+Moreover, we assume that people differ in their overall ability to classify words correctly, with a standard deviation of 0.1 and that people differ in how much the color effect influences their classification, with a standard deviation of 0.025.
+Finally, as some words might be more difficult to classify than others, we assume that there is an error term that is normally distributed with a standard deviation of 0.1.
+In this case, we can also add a random slope over words, as the color effect might be stronger for some words than for others. 
+We can assume this effect to be small with a standard deviation of 0.01.
+Finally, we will assume an residual error term of 0.2.
+
+```{r}
+sd_u0 <- 0.1
+sd_u1 <- 0.025
+sd_w0 <- 0.2
+sd_w1 <- 0.05
+sd_error <- 0.01
+```
+
+We will use the generate_design function again and change the variable names to match our new simulation.
+
+```{r}
+n_participants <- 50
+n_words <- 50
+n_colors <- 2
+
+generate_design_words <- function(n_participants, n_colors, n_words){
+  
+  
+  design_matrix <- expand.grid(participant = 1:n_participants, color = 1:n_colors, word = 1:n_words) # adding song to expand.grid
+  design_matrix$color <- ifelse(design_matrix$color ==1, "green", "red")
+  design_matrix$color <- factor(design_matrix$color)
+  # make green the reference level, so it gets 1 in the contrast matrix and red gets -1
+  design_matrix$color <- relevel(design_matrix$color, ref = "green")
+  contrasts(design_matrix$color) <- contr.sum(2)
+  design_matrix$word <- paste0("word", "_", design_matrix$word) 
+  return(design_matrix)
+}
+
+word_data <- generate_design_words(n_participants = n_participants, n_colors = n_colors, n_words = n_words)
+
+View(word_data)
+
+```
+
+We can see, that in this data, we have 100 participants, 2 colors, and 100 words, where each word is presented in both colors.
+
+Now we can simulate the data.
+
+```{r}
+set.seed(123)
+U0 <- rnorm(n_participants, 0, sd_u0)
+U1 <- rnorm(n_participants, 0, sd_u1)
+W0 <- rnorm(n_words, 0, sd_w0)
+W1 <- rnorm(n_words, 0, sd_w1)
+error <- rnorm(nrow(word_data), 0, sd_error)
+
+word_data1 <- word_data
+
+for(i in 1:nrow(word_data1)){
+  u0 <- U0[word_data1$participant[i]]
+  u1 <- U1[word_data1$participant[i]]
+  w0 <- W0[which(unique(word_data1$word) == word_data1$word[i])]
+  w1 <- W1[which(unique(word_data1$word) == word_data1$word[i])]
+  x <- ifelse(word_data1$color[i] == "green", 0.5, -0.5)
+  prob <- b0 + u0 + w0 + (b1 + u1 + w1) * x + error[i]
+  prob <- ifelse(prob > 1, 1, prob)
+  prob <- ifelse(prob < 0, 0, prob)
+
+  word_data1$Y[i] <- rbinom(1, 1, prob)
+
+}
+```
+
+
+and again fit our model - this time, we have to set the family to binomial.
+
+```{r}
+word_model <- glmer(Y ~ color + (1+color|participant) + (1+color|word), data = word_data1, family = binomial)
+summary(word_model)
+```
+
+The numbers in this summary are more difficult to compare to what we simulated as they are in terms of log-odds.
+We can use the emmeans package to get the probabilities for each level of the color variable.
+
+```{r}
+emmeans(word_model, "color", type = "response")
+```
