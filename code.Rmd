@@ -272,8 +272,6 @@ for(i in 1:nrow(song_data1)){
 View(song_data1)
 ```
 
-TODO: change slide terms from treatment effect to example-specific terms (genre, song etc.)
-
 In the above, we defined an error term that is again different for each observation.
 This is because, each single observation has some unknown factors that influence it.
 Hence, we need to have as many values for this error as we have observations.
