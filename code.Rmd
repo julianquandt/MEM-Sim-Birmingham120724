@@ -34,14 +34,12 @@ In this case, the design matrix needs to contain the following information:
 ```{r}
 set.seed(234)
 
-
 n_participants <- 100
+group <- rep(c(0, 1), each = n_participants / 2)
 
 b0 <- 0.5
 b1 <- 0.2
 error <- rnorm(n_participants, 0, 1)
-
-group <- rep(c(0, 1), each = n_participants / 2)
 
 design_matrix <- data.frame(b0, b1, group, error)
 
@@ -77,6 +75,31 @@ summary(lm(Y ~ group, data = design_matrix))
 
 As we can see, the p-values of the t-test and the linear model are identical.
 
+If we take a close look at parameter values, however, we might wonder why the parameter for the group effect is not 0.2 as we wanted but 0.33.
+
+This is due to the fact that there is noise in the simulation and with only 100 people, the simulated scores might not be close to the parameter value that we intended to simulate.
+If we increase the number of participants, we can see that the parameter estimates get closer to the true value.
+
+```{r}
+set.seed(345)
+
+n_participants <- 100000
+# b1 <- 0.2
+error <- rnorm(n_participants, 0, 1)
+
+group <- rep(c(0, 1), each = n_participants / 2)
+
+design_matrix <- data.frame(b0,b1, group, error)
+
+design_matrix$Y <- design_matrix$b0 + design_matrix$b1 * design_matrix$group + design_matrix$error
+```
+
+```{r}
+summary(lm(Y ~ group, data = design_matrix))
+```
+
+In this case, the parameter estimates are much closer to the intended value of 0.2.
+
 ## Simulate this question as a pre-post design
 
 Now, let's simulate a pre-post design for the same question. 
@@ -85,7 +108,7 @@ This time, our dependent variable will be the post scores, where the pre scores 
 This time the model formula is:
 
 $$
-y = premeasure + groupeffect + error
+post opinion = pre opinion + groupeffect + error
 $$
 
 In this case, as we want to simulate a pre-post design, in which the group effect depends on the group, we will precalculate the b1*group value and add it to the dependent variable.
@@ -101,7 +124,7 @@ pre_measure <- floor(rnorm(n_participants, 5, 2))
 pre_measure
 pre_measure <- ifelse(pre_measure < 1, 1, pre_measure)
 pre_measure <- ifelse(pre_measure > 7, 7, pre_measure)
-hist(pre_measure)
+pre_measure
 
 error <- rnorm(n_participants, 0, 1)
 
@@ -113,13 +136,7 @@ design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.5+0.2, 0.5)
 design_matrix$Y <- design_matrix$pre_measure + design_matrix$group_effect + design_matrix$error
 ```
 
-Now, we can run a linear model to see if the groups differ.
-
-```{r}
-summary(lm(Y ~ pre_measure + group , data = design_matrix))
-```
-
-Or we could run this as an ancova.
+Now we can test this with ANCOVA
 
 ```{r}
 library(car)
@@ -128,41 +145,15 @@ Anova(ancova_model, type="III")
 
 ```
 
+Now, we can run a linear model to see if the groups differ.
+
+```{r}
+summary(lm(Y ~ pre_measure + group , data = design_matrix))
+```
+
 As we can see, the test statistics are again identical. 
 
 Specifically, the squared t-values of the lm are identical to the F-values of the ancova.
-
-If we take a close look at parameter values, however, we might wonder why the parameter for the group effect is not 0.2 as we wanted but 0.44.
-
-This is due to the fact that there is noise in the simulation and with only 100 people, the simulated scores might not be close to the parameter value that we intended to simulate.
-If we increase the number of participants, we can see that the parameter estimates get closer to the true value.
-
-```{r}
-set.seed(345)
-
-n_participants <- 100000
-pre_measure <- floor(rnorm(n_participants, 5, 2))
-
-pre_measure <- ifelse(pre_measure < 1, 1, pre_measure)
-pre_measure <- ifelse(pre_measure > 7, 7, pre_measure)
-hist(pre_measure)
-
-# b1 <- 0.2
-error <- rnorm(n_participants, 0, 1)
-
-group <- rep(c(0, 1), each = n_participants / 2)
-
-design_matrix <- data.frame(pre_measure, group, error)
-design_matrix$group_effect <- ifelse(design_matrix$group == 1, 0.5+0.2, 0.5)
-
-design_matrix$Y <- design_matrix$pre_measure + design_matrix$group_effect  + design_matrix$error
-```
-
-```{r}
-summary(lm(Y ~ pre_measure + group, data = design_matrix))
-```
-
-In this case, the parameter estimates are much closer to the intended value of 0.2.
 
 ## Short example of power simulation
 
@@ -280,6 +271,9 @@ for(i in 1:nrow(song_data1)){
 View(song_data1)
 ```
 
+TODO: change the simulation to create all values inside the design matrix to make it more clear.
+TODO: change slide terms from treatment effect to example-specific terms (genre, song etc.)
+
 In the above, we defined an error term that is again different for each observation.
 This is because, each single observation has some unknown factors that influence it. 
 Hence, we need to have as many values for this error as we have observations.
@@ -372,6 +366,47 @@ We see that in the latter case, when we just run a model without accounting for 
 This is because the model will try to account for the participant-specific differences in overall liking by attributing this to the error term.
 This in turn decreases the power of the model to detect the genre effect, and decreases the amount of explained variance.
 
+## Singular fit because of too few observations
+
+Another reason why a model does not converge, is that there might not be enough observations to distinguish different causes of variation in the data, for example the difference between the u0 term and the error term.
+
+Let's see what happens if each person only listens to 1 song per genre:
+
+```{r}
+
+n_songs_single <- 1
+n_participants_single <- 1000
+song_data_single <- generate_design(n_participants = n_participants_single, n_genres = n_genres, n_songs = n_songs_single)
+
+```
+
+We can now simulate data with this new design matrix:
+
+```{r}
+
+set.seed(123)
+
+error_single <- rnorm(nrow(song_data_single), 0, 10)
+
+for(i in 1:nrow(song_data_single)){
+
+  u0 <- U0[song_data_single$participant[i]]
+  x <- ifelse(song_data_single$genre[i] == "rock", 0.5, -0.5)
+
+  song_data_single$Y[i] <- b0 + u0 + b1 * x + error_single[i]
+}
+```
+
+and fit the model
+
+```{r}
+song_model_single <- lmer(Y ~ genre + (1|participant), data = song_data_single)
+summary(song_model_single)
+```
+
+In this case, we see that the model estimates the random intercept to be 0.
+This is because there is no way for the model to tell whether variation is caused by the random intercept or the error term, as there is only one observation per participant and genre.
+
 ## Simulating Random Slopes
 
 If we want to add a participant-specific adjustment to the effect of genre on their overall liking, we can do so by adding a random slope.
@@ -431,7 +466,7 @@ W0 <- rnorm(n_songs*2, 0, sd_w0) #n_songs*2 as n_songs is the number of songs pe
 hist(75+W0, main = "Song-specific music liking", xlab = "Liking score (0-100)")
 ```
 
-The  histogram shows that songs differ hugely in how much they are liked overall in this new model.
+The histogram shows that songs differ hugely in how much they are liked overall in this new model.
 
 Now we can simulate the data again.
 
