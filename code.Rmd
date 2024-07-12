@@ -12,6 +12,9 @@ output:
     fig_width: 6
     fig_height: 4
     fig_caption: true
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r setup, include=FALSE}
@@ -22,14 +25,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Create a design matrix
 
-For each simulation, the first step we want to take care of is to create a design matrix. 
-In simple terms, this is a data frame that contains the information about parameter values as well as group identities and other info of participants. 
+For each simulation, the first step we want to take care of is to create a design matrix.
+In simple terms, this is a data frame that contains the information about parameter values as well as group identities and other info of participants.
 In this case, the design matrix needs to contain the following information:
 
-- `group`: The group identity of the participant (i.e., negative vs. positive clip)
-- `intercept (b0)`: the value we assign to the mean of the negative group
-- `slope (b1)`: the value we assign to the difference between the negative and positive group
-- `error`: the error term that we add to the data
+-   `group`: The group identity of the participant (i.e., negative vs. positive clip)
+-   `intercept (b0)`: the value we assign to the mean of the negative group
+-   `slope (b1)`: the value we assign to the difference between the negative and positive group
+-   `error`: the error term that we add to the data
 
 ```{r}
 set.seed(234)
@@ -46,8 +49,7 @@ design_matrix <- data.frame(b0, b1, group, error)
 View(design_matrix)
 ```
 
-
-## Create a dependent variable
+## Calculate the dependent variable
 
 Next, we want to create a dependent variable that is based on the design matrix.
 In this case, we want to create a dependent variable that is based on the following formula:
@@ -84,7 +86,7 @@ If we increase the number of participants, we can see that the parameter estimat
 set.seed(345)
 
 n_participants <- 100000
-# b1 <- 0.2
+
 error <- rnorm(n_participants, 0, 1)
 
 group <- rep(c(0, 1), each = n_participants / 2)
@@ -102,7 +104,7 @@ In this case, the parameter estimates are much closer to the intended value of 0
 
 ## Simulate this question as a pre-post design
 
-Now, let's simulate a pre-post design for the same question. 
+Now, let's simulate a pre-post design for the same question.
 This time, our dependent variable will be the post scores, where the pre scores are added to the model as a predictor.
 
 This time the model formula is:
@@ -111,10 +113,9 @@ $$
 post opinion = pre opinion + groupeffect + error
 $$
 
-In this case, as we want to simulate a pre-post design, in which the group effect depends on the group, we will precalculate the b1*group value and add it to the dependent variable.
+In this case, as we want to simulate a pre-post design, in which the group effect depends on the group, we will precalculate the b1\*group value and add it to the dependent variable.
 
 Note that this is technically identical to just using b1 = 0.2 but one nice thing of simulations is that we don't need to think about these technicalities, and can instead directly put in the numbers that we thought of.
-
 
 ```{r}
 set.seed(345)
@@ -151,7 +152,7 @@ Now, we can run a linear model to see if the groups differ.
 summary(lm(Y ~ pre_measure + group , data = design_matrix))
 ```
 
-As we can see, the test statistics are again identical. 
+As we can see, the test statistics are again identical.
 
 Specifically, the squared t-values of the lm are identical to the F-values of the ancova.
 
@@ -185,15 +186,15 @@ for(i in 1:1000){
 
 }
 
-power <- sum(p_values < 0.05) / length(p_values)
+power <- mean(p_values < 0.05)
 print(power)
 ```
 
 In this case, the power of the test would be 0.173.
 
-So let's compare this to G*Power.
+So let's compare this to G\*Power.
 
- ![The same power analysis in G*Power](src/g_power_ttest.png) 
+![The same power analysis in G\*Power](src/g_power_ttest.png)
 
 As we can see, the power is very similar to the power we calculated in R.
 
@@ -234,7 +235,7 @@ b1 <- 5 # this is the difference between rock and pop songs, meaning that people
 
 ```
 
-As before, b0 and b1 are just single values, as they are _fixed effects_ meaning that they are the same for each participant.
+As before, b0 and b1 are just single values, as they are *fixed effects* meaning that they are the same for each participant.
 
 In contrast, the random effect for participants that we want to add is a bit more complicated.
 In this case, we want to simulate that each participant has a different intercept.
@@ -271,11 +272,10 @@ for(i in 1:nrow(song_data1)){
 View(song_data1)
 ```
 
-TODO: change the simulation to create all values inside the design matrix to make it more clear.
 TODO: change slide terms from treatment effect to example-specific terms (genre, song etc.)
 
 In the above, we defined an error term that is again different for each observation.
-This is because, each single observation has some unknown factors that influence it. 
+This is because, each single observation has some unknown factors that influence it.
 Hence, we need to have as many values for this error as we have observations.
 For participants, we only have 10 values, as we only have 10 participants.
 
@@ -337,14 +337,14 @@ summary(song_model_2)
 
 We can see that the we now get a warning that the model is singular.
 This means that the best fitting model is one that is on the boundary of what the model can estimate.
-The reason for this is that the deviation for overall liking of music across participants is estimated as a standard deviation. 
+The reason for this is that the deviation for overall liking of music across participants is estimated as a standard deviation.
 By definition, standard deviations need to be greater than 0.
 If we set the standard deviation to 0 or very close to 0, this warning will tell us that the best-fitting solution of the model is one that is very close to the boundary of what the model can estimate.
 
-We can see that the other estimates of the model are nearly identical. 
+We can see that the other estimates of the model are nearly identical.
 Hence, the other estimates can in this case still be trusted, and the warning only occurs because the model (rightfully) estimates the standard deviation of the random intercept to be very close to 0.
 
-The problem is that usually, with real data, we do not _know_ the true value of the random effects and hence, we cannot know for sure whether the singularity warning is trivial (like in this case) or not.
+The problem is that usually, with real data, we do not *know* the true value of the random effects and hence, we cannot know for sure whether the singularity warning is trivial (like in this case) or not.
 However, if we see that one random effect is estimated to be very close to 0, we can see what happens if we exclude this effect.
 
 ```{r}
@@ -354,7 +354,7 @@ summary(song_model_3)
 
 We see that the effects without the random intercept are very similar to the effects with the random intercept.
 
-Now we can also see what happens if there _is_ a participant-specific difference in overall liking, but we fail to account for it:
+Now we can also see what happens if there *is* a participant-specific difference in overall liking, but we fail to account for it:
 
 ```{r}
 
@@ -505,7 +505,6 @@ n_songs <- 80
 song_data_large <- generate_design(n_participants = n_participants_large, n_genres = n_genres, n_songs = n_songs)
 ```
 
-
 Lets again create random effects for participants and songs in this larger sample
 
 ```{r}
@@ -578,18 +577,20 @@ song_model_8 <- lmer(Y ~ genre + (1+genre|participant) + (1|song), data = song_d
 summary(song_model_8)
 ```
 
-Now the estimate is again closer to 4. 
+Now the estimate is again closer to 4.
 This is not a bug but a feature of mixed-effects model simulations.
-We assume that we only tested our hypothesis on a _random_ subset of people from the population and other people might behave differently. 
-Similarly, we did not use _all_ pop and rock songs out there, so the results depend on the idiosyncratic sample of songs that we used.
+We assume that we only tested our hypothesis on a *random* subset of people from the population and other people might behave differently.
+Similarly, we did not use *all* pop and rock songs out there, so the results depend on the idiosyncratic sample of songs that we used.
 By simulating random effects, we can see what influence this has on the results.
 In a power simulation, these factors will thus rightfully influence the power we get, as individual simulations acknowledge the uncertainty that we have about the sample of songs and participants that we might end up with.
 
 # Part III - 👍: Adding random correlations
 
-Random effects terms can also be correlated:
-For instance, has a high overall liking of music across both genres (𝛽_0+𝑢_0 close to 100), this would indicate that they cannot dislike either music genre much or else they would not be able to have an average liking of close to 100 across genres. If they liked one music type (e.g. pop) with only 60 points, to have an average liking of e.g. 95, they would have to like rock music at 130, because (60+130)/2 = 95. However, 130 is not a possible value on our scale and therefore this can’t be the case.
-As a consequence, any person with high average liking across genres, is unlikely to have large values of 𝑢_1 . In other terms, across people the values of 𝑢_0 and 𝑢_1 will be negatively correlated.
+Random effects terms can also be correlated: For instance, has a high overall liking of music across both genres (𝛽_0+𝑢_0 close to 100), this would indicate that they cannot dislike either music genre much or else they would not be able to have an average liking of close to 100 across genres.
+If they liked one music type (e.g. pop) with only 60 points, to have an average liking of e.g. 95, they would have to like rock music at 130, because (60+130)/2 = 95.
+However, 130 is not a possible value on our scale and therefore this can’t be the case.
+As a consequence, any person with high average liking across genres, is unlikely to have large values of 𝑢_1 .
+In other terms, across people the values of 𝑢_0 and 𝑢_1 will be negatively correlated.
 
 To simulate this, we need to make sure that across people, the values of 𝑢_0 and 𝑢_1 are negatively correlated.
 
@@ -599,18 +600,17 @@ First let's have a look at where the correlations show up in the model output:
 summary(song_model_8)
 ```
 
-We can see that next to the estimate for the random effect of participant:genrerock, there is a correlation estimate of -0.03. This is the correlation between the random intercept and the random slope for genre rock.
+We can see that next to the estimate for the random effect of participant:genrerock, there is a correlation estimate of -0.03.
+This is the correlation between the random intercept and the random slope for genre rock.
 That it is so small makes sense, as we did not simulate any correlation between the random effects.
 
 To simulate this, we can use the `MASS` package to simulate correlated random effects.
 For this, we will calculate the covariance matrix of the random effects and then use the `mvrnorm` function to simulate the random effects.
-The covariance matrix is basically the random effect sizes that we put in before, expressed in terms of variances and covariance instead of standard deviations. 
+The covariance matrix is basically the random effect sizes that we put in before, expressed in terms of variances and covariance instead of standard deviations.
 For instance before we set sd_u0 (the random intercept term for participants) to 7 and sd_01 (the random slope term for genre effects over participants) to 3.5.
-Assuming a correlation of -0.2 between the random effects, the covariance can be calculated as:
-7*3.5*-0.2 = -4.9
+Assuming a correlation of -0.2 between the random effects, the covariance can be calculated as: 7*3.5*-0.2 = -4.9
 
 To create a matrix `sigma_u01` containing this information we can run:
-
 
 ```{r}
 library(MASS)
@@ -619,12 +619,8 @@ sigma_u01 <- matrix(c(sd_u0^2, sd_u0*sd_u1*corr_u01, sd_u0*sd_u1*corr_u01, sd_u1
 print(sigma_u01)
 ```
 
-We see that now this contains a 2x2 matrix with the variance of sd_u0 (7^2 = 49) and next to it the covariance 7*3.5*-0.2 = -4.9.
-In the second row, we again have the covariance, followed by the variance of sd_u1 (3.5^2 = 12.25).
-Thus the matrix looks like this:
-
-| sd_u0^2 | sd_u0*sd_u1*corr_u01 |
-| sd_u0*sd_u1*corr_u01 | sd_u1^2 |
+We see that now this contains a 2x2 matrix with the variance of sd_u0 (7\^2 = 49) and next to it the covariance 7*3.5*-0.2 = -4.9.
+In the second row, we again have the covariance, followed by the variance of sd_u1 (3.5\^2 = 12.25).
 
 Now we can simulate the random effects using this covariance matrix.
 
@@ -671,17 +667,17 @@ We can see, that now our estimated correlation is close to the correlation that 
 
 # Part III ❤️ : How to come up with parameter values
 
-In the above, we basically came up with parameter values out of thin air and just added all of the random terms on top of each other. 
+In the above, we basically came up with parameter values out of thin air and just added all of the random terms on top of each other.
 This is usually not what we would want to do.
-In fact, as we already saw earlier, compared to a fixed-effects-only linear model (lm) the advantage of a mixed-model (lmer) is that can partition the residual variance (i.e. unexplained variance) into different sources of variance, which will of course _shrink_ the overall variance.
-In the steps above, we never changed the value of the error term (it was always kept at 10). 
-However, usually we would expect the total error to _decrease_ as we add random effects, as some of the noise that appears to be random at first, will turn out to be attributable to participants (as in the random intercept term) or idiosyncratic liking differences in genres across participants (the random slope term) or idiosyncratic influences of songs. 
+In fact, as we already saw earlier, compared to a fixed-effects-only linear model (lm) the advantage of a mixed-model (lmer) is that can partition the residual variance (i.e. unexplained variance) into different sources of variance, which will of course *shrink* the overall variance.
+In the steps above, we never changed the value of the error term (it was always kept at 10).
+However, usually we would expect the total error to *decrease* as we add random effects, as some of the noise that appears to be random at first, will turn out to be attributable to participants (as in the random intercept term) or idiosyncratic liking differences in genres across participants (the random slope term) or idiosyncratic influences of songs.
 
 Thus, instead of coming up with numbers for all of them, we can think about how much of the overall noise (the residual variance) will probably be attributable to participants, genres, and songs.
 
 For instance, in our music example, we might think that just by factors we do not know, likings will vary strongly
 
-Instead, by quickly skipping through some playlists listed on https://musicstax.com/ we can see that a quick search for rock songs already shows a spotify popularity rating between 32% and 80%. 
+Instead, by quickly skipping through some playlists listed on <https://musicstax.com/> we can see that a quick search for rock songs already shows a spotify popularity rating between 32% and 80%.
 So as a rough starting point, lets say that average likings for songs altogether are around 50 points and that the error variance should be around 25 points, meaning that for any single song, the error will cause the scores to vary widely between 0 and 100.
 So we set:
 
@@ -748,7 +744,10 @@ Of course, this is still pretty much eye-balling, but if you have more informed 
 
 # Part III 🎉 : Simulating nested data
 
-It could be possible that the liking that people show for music also depend on what country they live in as music could be more or less important in a culture. To address this, we could add a random term that identifies different countries. For instance, we could assume that our 100 participants in this simulation come from 5 different countries (I am not qualified to make any actual statements about which countries would show which effect and do not want to imply things only for the sake of an example so I will just call the countries Country A - Country E). We can also assume that the countries are of different size so that they will not be equally represented by the 500 people in our sample.
+It could be possible that the liking that people show for music also depend on what country they live in as music could be more or less important in a culture.
+To address this, we could add a random term that identifies different countries.
+For instance, we could assume that our 100 participants in this simulation come from 5 different countries (I am not qualified to make any actual statements about which countries would show which effect and do not want to imply things only for the sake of an example so I will just call the countries Country A - Country E).
+We can also assume that the countries are of different size so that they will not be equally represented by the 500 people in our sample.
 
 ```{r}
 
@@ -762,7 +761,6 @@ for(i in 1:nrow(song_data8)){
 }
 View(song_data8)
 ```
-
 
 Lets assume that 10% of the variance that we previously thought was attributed to participants is actually attributed to countries.
 
@@ -814,7 +812,6 @@ For instance, we could simulate that people are more likely to classify words as
 We will code the DV in terms of it correctness, where 1 indicates a correct classification and 0 an incorrect classification.
 We assume that people are quite good at this, and that the overall probability of a correct classification is 0.8.
 
-
 ```{r}
 b0 <- 0.8
 ```
@@ -827,7 +824,7 @@ b1 <- 0.05
 
 Moreover, we assume that people differ in their overall ability to classify words correctly, with a standard deviation of 0.1 and that people differ in how much the color effect influences their classification, with a standard deviation of 0.025.
 Finally, as some words might be more difficult to classify than others, we assume that there is an error term that is normally distributed with a standard deviation of 0.1.
-In this case, we can also add a random slope over words, as the color effect might be stronger for some words than for others. 
+In this case, we can also add a random slope over words, as the color effect might be stronger for some words than for others.
 We can assume this effect to be small with a standard deviation of 0.01.
 Finally, we will assume an residual error term of 0.2.
 
@@ -893,7 +890,6 @@ for(i in 1:nrow(word_data1)){
 
 }
 ```
-
 
 and again fit our model - this time, we have to set the family to binomial.
 
